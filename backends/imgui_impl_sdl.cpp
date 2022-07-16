@@ -289,8 +289,11 @@ bool ImGui_ImplSDL2_ProcessEvent(const SDL_Event* event)
 				// For some reason a DpiScale of 2.65 requires a scaling factor of 2.0.
 				// Supposedly a DpiScale of 1.65 would require a scaling factor of 2.0 as well.
 				// FIXME: don't just hard code the scaling factor
-				mouse_pos.x *= 2.0f;
-				mouse_pos.y *= 2.0f;
+				if(bd->Renderer != nullptr)
+				{
+					mouse_pos.x *= 2.0f;
+					mouse_pos.y *= 2.0f;
+				}
 			}
 #endif
 			
@@ -561,8 +564,11 @@ static void ImGui_ImplSDL2_UpdateMouseData()
 				// For some reason a DpiScale of 2.65 requires a scaling factor of 2.0.
 				// Supposedly a DpiScale of 1.65 would require a scaling factor of 2.0 as well.
 				// FIXME: don't just hard code the scaling factor
-				mouse_x *= 2.0f;
-				mouse_y *= 2.0f;
+				if(bd->Renderer != nullptr)
+				{
+					mouse_x *= 2.0f;
+					mouse_y *= 2.0f;
+				}
 			}
 #endif
 			
