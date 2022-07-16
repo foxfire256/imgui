@@ -279,6 +279,21 @@ bool ImGui_ImplSDL2_ProcessEvent(const SDL_Event* event)
                 mouse_pos.x += window_x;
                 mouse_pos.y += window_y;
             }
+
+#if defined(__APPLE__)
+			// Fix for high DPI mac
+			// This works when the mouse button is depressed
+			ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+			if (!platform_io.Monitors.empty() && platform_io.Monitors[0].DpiScale > 1.0f)
+			{
+				// For some reason a DpiScale of 2.65 requires a scaling factor of 2.0.
+				// Supposedly a DpiScale of 1.65 would require a scaling factor of 2.0 as well.
+				// FIXME: don't just hard code the scaling factor
+				mouse_pos.x *= 2.0f;
+				mouse_pos.y *= 2.0f;
+			}
+#endif
+			
             io.AddMousePosEvent(mouse_pos.x, mouse_pos.y);
             return true;
         }
@@ -529,36 +544,31 @@ static void ImGui_ImplSDL2_UpdateMouseData()
             // Multi-viewport mode: mouse position in OS absolute coordinates (io.MousePos is (0,0) when the mouse is on the upper-left of the primary monitor)
             int mouse_x, mouse_y, window_x, window_y;
             SDL_GetGlobalMouseState(&mouse_x, &mouse_y);
-#ifdef __APPLE__
-			// Fix for high DPI mac
-			ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
-			if (!platform_io.Monitors.empty() && platform_io.Monitors[0].DpiScale > 1.0f)
-			{
-				// The Framebuffer is scaled by an integer ceiling of the actual ratio, so 2.0 not 1.685 on Mac!
-				mouse_x *= platform_io.Monitors[0].DpiScale;
-				mouse_y *= platform_io.Monitors[0].DpiScale;
-			}
-#endif
+
             if (!(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable))
             {
                 SDL_GetWindowPosition(focused_window, &window_x, &window_y);
                 mouse_x -= window_x;
                 mouse_y -= window_y;
             }
+
+#ifdef __APPLE__
+			// Fix for high DPI mac
+			// This works when the mouse button isn't depressed
+			ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+			if (!platform_io.Monitors.empty() && platform_io.Monitors[0].DpiScale > 1.0f)
+			{
+				// For some reason a DpiScale of 2.65 requires a scaling factor of 2.0.
+				// Supposedly a DpiScale of 1.65 would require a scaling factor of 2.0 as well.
+				// FIXME: don't just hard code the scaling factor
+				mouse_x *= 2.0f;
+				mouse_y *= 2.0f;
+			}
+#endif
+			
             io.AddMousePosEvent((float)mouse_x, (float)mouse_y);
         }
     }
-
-#ifdef __APPLE__
-	// Fix for high DPI mac
-	ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
-	if (!platform_io.Monitors.empty() && platform_io.Monitors[0].DpiScale > 1.0f)
-	{
-		// The Framebuffer is scaled by an integer ceiling of the actual ratio, so 2.0 not 1.685 on Mac!
-		//io.MousePos.x *= platform_io.Monitors[0].DpiScale;
-		//io.MousePos.y *= platform_io.Monitors[0].DpiScale;
-	}
-#endif
 
     // (Optional) When using multiple viewports: call io.AddMouseViewportEvent() with the viewport the OS mouse cursor is hovering.
     // If ImGuiBackendFlags_HasMouseHoveredViewport is not set by the backend, Dear imGui will ignore this field and infer the information using its flawed heuristic.
