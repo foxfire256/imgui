@@ -529,6 +529,16 @@ static void ImGui_ImplSDL2_UpdateMouseData()
             // Multi-viewport mode: mouse position in OS absolute coordinates (io.MousePos is (0,0) when the mouse is on the upper-left of the primary monitor)
             int mouse_x, mouse_y, window_x, window_y;
             SDL_GetGlobalMouseState(&mouse_x, &mouse_y);
+#ifdef __APPLE__
+			// Fix for high DPI mac
+			ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+			if (!platform_io.Monitors.empty() && platform_io.Monitors[0].DpiScale > 1.0f)
+			{
+				// The Framebuffer is scaled by an integer ceiling of the actual ratio, so 2.0 not 1.685 on Mac!
+				mouse_x *= platform_io.Monitors[0].DpiScale;
+				mouse_y *= platform_io.Monitors[0].DpiScale;
+			}
+#endif
             if (!(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable))
             {
                 SDL_GetWindowPosition(focused_window, &window_x, &window_y);
@@ -538,6 +548,17 @@ static void ImGui_ImplSDL2_UpdateMouseData()
             io.AddMousePosEvent((float)mouse_x, (float)mouse_y);
         }
     }
+
+#ifdef __APPLE__
+	// Fix for high DPI mac
+	ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+	if (!platform_io.Monitors.empty() && platform_io.Monitors[0].DpiScale > 1.0f)
+	{
+		// The Framebuffer is scaled by an integer ceiling of the actual ratio, so 2.0 not 1.685 on Mac!
+		//io.MousePos.x *= platform_io.Monitors[0].DpiScale;
+		//io.MousePos.y *= platform_io.Monitors[0].DpiScale;
+	}
+#endif
 
     // (Optional) When using multiple viewports: call io.AddMouseViewportEvent() with the viewport the OS mouse cursor is hovering.
     // If ImGuiBackendFlags_HasMouseHoveredViewport is not set by the backend, Dear imGui will ignore this field and infer the information using its flawed heuristic.
@@ -672,6 +693,16 @@ void ImGui_ImplSDL2_NewFrame()
     io.DisplaySize = ImVec2((float)w, (float)h);
     if (w > 0 && h > 0)
         io.DisplayFramebufferScale = ImVec2((float)display_w / w, (float)display_h / h);
+
+#if defined(__APPLE__)
+	// On Apple, The window size is reported in Low DPI, even when running in high DPI mode
+	ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+	if (!platform_io.Monitors.empty() && platform_io.Monitors[0].DpiScale > 1.0f && display_h != h)
+	{
+		io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+		io.DisplaySize = ImVec2((float)display_w, (float)display_h);
+	}
+#endif
 
     // Setup time step (we don't use SDL_GetTicks() because it is using millisecond resolution)
     static Uint64 frequency = SDL_GetPerformanceFrequency();
